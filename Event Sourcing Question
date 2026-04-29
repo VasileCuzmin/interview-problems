@@ -1,0 +1,57 @@
+Can I do event sourcing with a master db (for write) and slaves(for reads). How can I sync them?
+
+This is a fantastic interview question. The short answer is yes, absolutely. In fact, separating your write database from your read databases is the standard way to implement Event Sourcing.
+
+In system design, this is known as CQRS (Command Query Responsibility Segregation). When you pair Event Sourcing with CQRS, your "master" database becomes your Write Model (the Event Store), and your "slave" databases become your Read Models (Projections).
+
+[A quick note on terminology for interviews: The industry standard has largely shifted away from "master/slave." You will sound more senior if you refer to them as the Primary/Replica, or simply the Write Database and Read Databases.]
+
+Here is exactly how you explain the setup and the synchronization mechanisms to an interviewer.
+
+
+1. The Setup
+The Write Database (Primary): This stores the append-only Event Store. It is highly optimized for fast, concurrent inserts. It does not care about how the UI needs to query the data.
+
+The Read Databases (Replicas): These store the Materialized Views or Projections. They listen to the events and build a state that is heavily optimized for fast, complex querying (e.g., a relational table, a NoSQL document, or an Elasticsearch index).
+
+
+2. How to Sync Them (The Projections)
+To keep the read databases updated, you have to build a "Projection Engine" that takes events from the write database and applies them to the read databases. There are three primary ways to architect this sync:
+
+Method A: The Message Broker (Push-based)
+When the application saves an event to the write database, it immediately publishes that same event to a message broker (like Apache Kafka, RabbitMQ, or AWS SNS/SQS).
+
+Your read databases have background workers (subscribers) listening to this message queue.
+
+When a new event arrives, the worker updates the read database.
+
+Risk: Dual-write problem. If the database save succeeds but publishing to the queue fails, your systems are permanently out of sync. You need the Outbox Pattern (as discussed previously) to make this safe.
+
+Method B: Catch-up Subscriptions / Polling (Pull-based)
+Instead of pushing events, the read side constantly asks the write side for new events.
+
+Every event in your Event Store has a sequential ID or a global position/timestamp.
+
+The read side keeps track of the last sequence ID it successfully processed.
+
+A background worker constantly queries the Event Store: "Give me all events where Sequence ID > X."
+
+Benefit: Extremely reliable. You never lose events. It is also very easy to rebuild a read database from scratch by simply resetting the sequence ID to 0.
+
+Method C: Change Data Capture (CDC / Transaction Log Tailing)
+This is the most modern, robust approach for high-performance systems.
+
+You use a tool like Debezium to monitor the Write Database's internal transaction log (e.g., PostgreSQL's WAL).
+
+The moment an event is committed to the database disk, the CDC tool detects it and streams it into a message bus (like Kafka).
+
+The read workers consume from Kafka and update the read DBs.
+
+Benefit: Zero dual-write risk. The database is the queue.
+
+3. The Interview "Gotcha": Eventual Consistency
+If you explain the above, the interviewer will almost certainly test you on the primary side effect of this architecture: Eventual Consistency.
+
+Because the synchronization happens asynchronously in the background, there is a slight delay (usually milliseconds, but sometimes seconds) between a user clicking "Save" and the data appearing in the Read Database.
+
+

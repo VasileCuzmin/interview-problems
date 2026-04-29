@@ -1,0 +1,57 @@
+I have a form. I have to save the data in my sistem and also an external system, using a http endpoint. How would you do that?
+
+
+When saving data to both an internal database and an external system via an HTTP API, the biggest challenge is dealing with partial failures. You have to plan for scenarios where your database saves successfully, but the external API is down, times out, or returns an error.
+
+Depending on your application's requirements for speed and reliability, there are two primary ways to architect this: a synchronous approach and an asynchronous approach.
+
+1. The Synchronous Approach (Simplest)
+In this approach, you do everything in a single, blocking flow before responding to the user.
+
+The user submits the form.
+
+You save the data to your local database.
+
+You immediately make the HTTP request to the external system.
+
+Once the external system responds, you return a success message to the user.
+
+
+Pros and Cons
+Pros: Very easy to implement. You know immediately if both operations succeeded.
+
+Cons: This ties your application's performance to the external API. If the external API is slow, the user is left waiting on a loading spinner. If the external API fails, you must decide whether to roll back your local database save or present the user with a confusing "partially saved" error.
+
+Best for: Low-traffic applications where the external system is highly reliable, and the user must know if the external system accepted the data before proceeding.
+
+
+2. The Asynchronous Approach / Outbox Pattern (Recommended)
+
+For production systems, the best practice is to decouple the two actions using a background process. The most robust way to do this is the Transactional Outbox Pattern.
+
+Here is how the flow works:
+
+The User Request: The user submits the form.
+
+The Local Transaction: Within a single database transaction, you:
+
+Save the form data to your main table.
+
+Save a record to an "Outbox" or "Pending External Requests" table. This record contains the payload needed for the external HTTP endpoint.
+
+The Quick Response: You commit the database transaction and immediately return a success message to the user.
+
+The Background Worker: A separate background process (like a cron job, a dedicated worker service, or a message queue consumer) constantly checks the Outbox table for unsent records.
+
+The HTTP Call: The worker picks up the pending record and makes the HTTP request to the external endpoint.
+
+Completion/Retry: * If the external API returns a 200 OK, the worker marks the outbox record as "Sent" (or deletes it).
+
+If the external API fails, the worker leaves it as "Pending" and tries again later using an exponential backoff strategy (e.g., retrying after 1 minute, then 5 minutes, then 15 minutes).
+
+Pros and Cons
+Pros: High performance for the user (they don't wait for the external API). Extremely resilient to external outages. Guarantees that if data is saved locally, it will eventually be sent externally.
+
+Cons: More complex to build. Requires background jobs. The external system is updated with "eventual consistency" (a slight delay) rather than instantly.
+
+
