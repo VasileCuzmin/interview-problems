@@ -1,0 +1,65 @@
+Yes, JavaScript absolutely supports concurrency, but it does so in a highly unique way compared to languages like C#, Java, or Python.
+
+JavaScript is inherently single-threaded, meaning it has only one Call Stack and can only execute exactly one piece of code at a time. It achieves concurrency not by spinning up multiple threads, but through a non-blocking, event-driven model powered by the Event Loop.
+
+Here is exactly how JavaScript juggles multiple tasks at once without blocking the main thread.
+
+The 4 Pillars of JavaScript Concurrency
+
+To understand how JavaScript handles concurrency, you have to look outside the core JavaScript engine (like V8) and look at the environment it runs in (the Browser or Node.js).
+
+1. The Call Stack (The Main Thread)
+   This is where your JavaScript code actually runs. When you call a function, it gets pushed onto the stack. When the function finishes, it pops off. Because it is single-threaded, if a function takes 5 seconds to run (e.g., a massive while loop), the entire application freezes for 5 seconds. This is called "blocking the thread."
+
+2. Web APIs / Node.js APIs (The Secret Helpers)
+
+To prevent the thread from blocking, JavaScript delegates slow, I/O-bound tasks to the environment.
+When you make a network request (fetch), set a timer (setTimeout), or listen for a click event, JavaScript does not process these itself. It hands the task off to the Browser's Web APIs (or Node's C++ background threads) and instantly moves on to execute the next line of code.
+
+3. The Callback Queues
+
+When the external environment finishes its background task (e.g., the HTTP response comes back), it doesn't just shove the result back into your running code. That would cause chaos. Instead, it places your callback function (or Promise .then()) into a waiting area:
+
+Microtask Queue: High priority (used mostly for Promises).
+
+Macrotask/Callback Queue: Standard priority (used for setTimeout, setInterval, DOM events).
+
+4. The Event Loop (The Orchestrator)
+
+The Event Loop is an endless, constantly running cycle that acts as a traffic cop. It has one very simple rule:
+
+"Look at the Call Stack. If the Call Stack is completely empty, look at the Queues. If there is a callback waiting, push it onto the Call Stack to be executed."
+
+An Example in Action
+
+console.log("1. Starting");
+
+setTimeout(() => {
+console.log("2. Timer finished");
+}, 0);
+
+console.log("3. Ending");
+
+Because of JavaScript's concurrency model, the output will be 1, 3, 2.
+
+console.log("1") goes on the Call Stack, prints, and pops off.
+
+setTimeout goes on the Call Stack. JS sees it's a timer, hands it to the Browser's Web API, and pops it off instantly. The Browser starts the 0-second countdown.
+
+console.log("3") goes on the Call Stack, prints, and pops off.
+
+The Browser finishes the timer and pushes the callback () => console.log("2") into the Callback Queue.
+
+The Event Loop sees the Call Stack is empty, grabs the callback from the Queue, and pushes it onto the Call Stack. It prints 2.
+
+
+What About True Parallelism in JS?
+For years, JavaScript could only do concurrency (task switching via the Event Loop), but not parallelism (simultaneous execution).
+
+However, modern JavaScript does support true parallelism for heavy CPU-bound tasks (like image processing or heavy math) using specific features:
+
+Web Workers (in the browser).
+
+Worker Threads (in Node.js).
+
+These allow you to spin up entirely separate JavaScript environments running on different CPU cores, completely independent of the main thread and its Event Loop.

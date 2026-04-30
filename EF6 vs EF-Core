@@ -1,0 +1,32 @@
+Entity Framework Core (EF Core) is not just an incremental update to Entity Framework 6 (EF6); it is a complete, ground-up rewrite designed for the modern .NET ecosystem. While EF6 is a legacy, Windows-centric Object-Relational Mapper (ORM) that is now in maintenance mode, EF Core is actively developed, incredibly fast, and packed with modern database features.  Here is a breakdown of the major new features, architectural changes, and capabilities that EF Core brings to the table that EF6 simply does not have.
+
+
+1. Major Feature Additions
+
+EF Core introduces several first-class features that either required hacky workarounds, raw SQL, or expensive third-party libraries in EF6.  
+
+Native Bulk Operations (ExecuteUpdate & ExecuteDelete): Introduced in EF Core 7, you can now write a LINQ query to update or delete thousands of rows in a single SQL command without loading the entities into memory first. In EF6, you had to pull every row into memory, modify it, and call SaveChanges(), or resort to writing raw SQL strings.  
+
+JSON Column Mapping: Modern relational databases (SQL Server, PostgreSQL) support JSON columns. EF Core (versions 7 through 9) allows you to map a C# object directly to a JSON column and even write LINQ queries that filter based on properties inside that JSON document. EF6 has zero native understanding of JSON.  
+
+Global Query Filters: You can define a filter at the DbContext level that automatically applies to all LINQ queries for a specific entity. This is an absolute game-changer for implementing Soft Deletes (e.g., IsDeleted == false) or Multi-Tenancy (e.g., TenantId == currentTenant). In EF6, you had to manually append these filters to every query or write complex interceptors.
+
+Shadow Properties: EF Core allows you to define properties that exist in your database schema and are tracked by EF, but do not actually exist in your C# domain classes. This is perfect for auditing fields like CreatedAt or LastModifiedBy without polluting your clean domain models.
+
+Alternate Keys: EF Core allows you to define unique constraints on non-primary-key columns and actually use them as the target of a Foreign Key relationship.  
+
+Complex Types & Primitive Collections: Added in EF Core 8, you can now map collections of primitive types (like List<int> or List<string>) natively, and use "Complex Types" to map value objects (like an Address or Coordinate) that do not have their own Primary Key but live inside an entity's table.
+
+
+2. Architectural and Performance Upgrades
+
+EF Core was completely re-architected to be lightweight and modular, resulting in massive performance gains over EF6.  
+
+Cross-Platform: EF6 was built for the old Windows-only .NET Framework. EF Core runs on Windows, Linux, macOS, and even mobile devices.  
+
+DbContext Pooling: In high-traffic web applications, creating and destroying the DbContext on every single HTTP request creates Garbage Collection pressure. EF Core supports DbContext pooling, which recycles contexts to drastically improve high-throughput web API performance.
+
+In-Memory Database Provider: EF Core ships with an official In-Memory database provider. While it shouldn't replace integration testing with a real database, it allows for incredibly fast and easy unit testing of your business logic.  
+
+Implicit Many-to-Many: EF Core can automatically handle many-to-many relationships behind the scenes without forcing you to explicitly create and map a "join table" entity in your C# code (a highly requested feature finally brought over and improved from EF6).
+

@@ -1,0 +1,57 @@
+If you have ever noticed Entity Framework Core eating up massive amounts of memory or grinding to a halt when you use .Include() to load related data, you have likely run into the exact problem split queries were built to solve.
+
+To understand when to use .AsSplitQuery(), you first have to understand the "Cartesian Explosion" problem it fixes.
+
+The Problem: The Cartesian Explosion
+
+By default, when you use .Include() to load related data, EF Core tries to be efficient by fetching everything in a single SQL query using LEFT JOINs.
+
+If you load a Blog, and include its Posts, and also include its Tags, the database returns a flattened grid of data.
+
+If a Blog has 10 Posts and 10 Tags, the database doesn't return 20 rows. It multiplies them. It returns 100 rows (1 Blog × 10 Posts × 10 Tags).
+
+The data for the Blog (like its title and author) is duplicated 100 times over the network.
+
+If you are including multiple large collections, millions of redundant data points are sent over the wire, causing massive network lag and memory crashes when EF Core tries to untangle it.
+
+The Solution: .AsSplitQuery()
+
+When you append .AsSplitQuery() to your LINQ statement, you instruct EF Core to stop using giant JOINs. Instead, it generates a separate SQL query for each collection.
+
+var blogs = await context.Blogs
+    .Include(b => b.Posts)
+    .Include(b => b.Tags)
+    .AsSplitQuery() // Tells EF Core to fire 3 separate queries
+    .ToListAsync();
+
+
+    Instead of returning 100 duplicated rows, it executes:
+
+One query for the Blogs (returns 1 row).
+
+One query for the Posts (returns 10 rows).
+
+One query for the Tags (returns 10 rows).
+
+EF Core then stitches them together in memory. You just transferred 21 rows over the network instead of 100.
+
+When to Use Split Queries
+
+You should explicitly use .AsSplitQuery() when:
+
+You are Include()-ing multiple collections (1-to-Many or Many-to-Many): As a rule of thumb, if you are including two or more collections on a single entity, you should strongly consider a split query to avoid the Cartesian multiplier.
+
+The parent entity has very large columns: If your main Blog entity has a massive string column (like a 5MB base64 image or a huge text payload), a single JOIN query will duplicate that 5MB payload for every single Post it returns. Split queries prevent this.
+
+Paging with collections: When you use .Skip() and .Take() alongside multiple .Include() collections, single queries can sometimes result in incorrect pagination results or severely unoptimized SQL.
+
+When NOT to Use Split Queries (The Trade-offs)
+
+Split queries are not a magic bullet. You should stick to the default single query when:
+
+You are only including 1-to-1 relationships: If a User has one Profile, a JOIN does not duplicate any rows. A split query here would just add unnecessary network latency by making two trips to the database instead of one.
+
+Network latency is your biggest bottleneck: If your database is hosted far away from your web server, making 3 or 4 separate trips to the database (even if they are smaller payloads) might take longer than just making 1 big trip.
+
+You need strict point-in-time consistency: Because split queries execute multiple SQL commands sequentially, another user could theoretically update or delete a related record in the milliseconds between your first query finishing and your second query starting. (You can mitigate this by wrapping the call in a Transaction or using Snapshot isolation).
+
