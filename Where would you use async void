@@ -1,0 +1,64 @@
+The short, definitive answer is: Almost never, with one major exception—Event Handlers.
+
+In the C# and .NET world, async void is universally considered an anti-pattern for standard application code. Microsoft explicitly advises developers to "avoid async void" because it bypasses the safety mechanisms built into the Task-based Asynchronous Pattern (TAP).
+
+Here is why it is so dangerous, and exactly when you are forced to use it.
+
+
+1. Why async void is Dangerous
+
+If you write a method like public async void ProcessDataAsync(), you are creating a "fire-and-forget" operation with two massive hidden traps.
+
+It crashes your application on exceptions: When an exception is thrown inside an async Task method, the exception is caught and stored inside the returned Task object. If an exception is thrown inside an async void method, there is no Task object to catch it. The exception gets thrown directly onto the active Synchronization Context, which will immediately crash your entire application process.
+
+It cannot be awaited: Because the method returns void, the calling code cannot use the await keyword on it. The caller has absolutely no way to know when the method finishes, making it impossible to coordinate dependent tasks or write reliable unit tests.
+
+2. The One Exception: Event Handlers
+The only time you should ever use async void is when you are writing a UI event handler (like a button click in WPF, WinForms, or MAUI) or implementing a strict interface that requires a void return type.
+
+Why are you forced to use it here?
+
+Standard .NET events strictly dictate a specific signature: void EventHandler(object sender, EventArgs e). You cannot change the return type to Task. If you need to make a network call or read a file when a user clicks a button, your only option is to make the handler async void.
+
+// This is the ONLY acceptable use of async void
+private async void SubmitButton_Click(object sender, EventArgs e)
+{
+    // WARNING: You MUST wrap the entire body in a try/catch.
+    // If SaveDataAsync throws, the entire UI application will crash.
+    try
+    {
+        SubmitButton.IsEnabled = false;
+        await SaveDataAsync(); 
+    }
+    catch (Exception ex)
+    {
+        ShowErrorMessage("Failed to save data: " + ex.Message);
+    }
+    finally
+    {
+        SubmitButton.IsEnabled = true;
+    }
+}
+
+3. What if you just want "Fire-and-Forget"?
+Sometimes developers use async void because they want to trigger a background process (like sending an email or logging analytics) and they don't want the user to wait for it to finish.
+
+Do not use async void for this. Instead, return an async Task and explicitly discard it or handle it safely.
+
+// The Safe Background Method
+public async Task LogAnalyticsAsync() 
+{
+    // network call here
+}
+
+// The Caller
+public void DoWork()
+{
+    // ❌ BAD: public async void LogAnalyticsAsync()
+
+    // ✅ GOOD: Call the Task, but don't await it. 
+    // Assigning it to '_' explicitly tells the compiler "I know this is a Task and I am intentionally not awaiting it."
+    _ = LogAnalyticsAsync(); 
+}
+
+For production systems, even the _ = discard pattern is risky because unhandled exceptions in that background task will be swallowed silently. The industry best practice for fire-and-forget tasks is to use a background queue (like IHostedService or Hangfire) rather than un-awaited Tasks.

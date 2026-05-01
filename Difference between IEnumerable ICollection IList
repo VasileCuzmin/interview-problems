@@ -1,0 +1,37 @@
+Each interface inherits from the one before it, adding more capabilities, but at the cost of being more heavily tied to in-memory data structures.
+
+1. IEnumerable<T> (The Iterator)
+
+This is the absolute base interface for all collections in C#.
+
+What it does: It allows you to iterate over a collection using a foreach loop. That is essentially all it does. It is read-only and forward-only.
+
+What it lacks: It does not know how many items are in it (no .Count property). You cannot add or remove items. You cannot access items by index.
+
+The Superpower (Deferred Execution): An IEnumerable might not actually hold data in memory. It might represent a database query that hasn't executed yet, or a generator function using yield return.
+
+When to use it: When you only need to loop through data, or when you want to return a query from a method without forcing it to execute and load into memory immediately.
+
+
+2. ICollection<T> (The Bag of Items)
+
+ICollection<T> inherits from IEnumerable<T>.
+
+What it adds: It adds the ability to modify the collection and know its size. It introduces .Count, .Add(), .Remove(), and .Clear().
+
+What it lacks: It does not guarantee any specific order, and it does not allow you to access an item at a specific position.
+
+Key characteristic: Because it has a .Count and you can add/remove items, an ICollection is generally materialized—meaning the data has been executed and is currently sitting in the server's RAM.
+
+When to use it: When you need a collection that you can modify or count, but you do not care about the order of the items (e.g., a HashSet<T> implements ICollection).
+
+3. IList<T> (The Ordered List)
+
+IList<T> inherits from ICollection<T> (and by extension, IEnumerable<T>).
+
+What it adds: It adds order and positional access. It introduces the indexer [int index] (e.g., myList[3]), as well as .Insert(index, item) and .RemoveAt(index).
+
+Key characteristic: It represents a sequence of items where the exact position of every item is strictly maintained.
+
+When to use it: When you specifically need to access, inject, or remove items at a precise index.
+

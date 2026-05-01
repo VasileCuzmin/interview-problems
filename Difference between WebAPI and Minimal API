@@ -1,0 +1,74 @@
+1. The Code Comparison
+The Traditional Web API (Controller-Based)
+In the traditional approach, building a single endpoint requires a lot of ceremony. You have your Program.cs to set up the app, and then a completely separate class file for the controller.
+
+C#
+// 1. Program.cs (Setup)
+builder.Services.AddControllers();
+app.MapControllers();
+
+// 2. UsersController.cs (The Endpoint)
+[ApiController]
+[Route("api/[controller]")]
+public class UsersController : ControllerBase
+{
+    private readonly IUserService _userService;
+
+    public UsersController(IUserService userService)
+    {
+        _userService = userService;
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetUser(int id)
+    {
+        var user = await _userService.GetUserAsync(id);
+        return user is null ? NotFound() : Ok(user);
+    }
+}
+The Minimal API
+A Minimal API collapses all of that boilerplate into a single fluid declaration, usually right inside Program.cs. It uses lambda expressions and automatically handles Dependency Injection (DI) through the lambda parameters.
+
+C#
+// Program.cs (Setup AND Endpoint)
+app.MapGet("/api/users/{id}", async (int id, IUserService userService) => 
+{
+    var user = await userService.GetUserAsync(id);
+    return user is null ? Results.NotFound() : Results.Ok(user);
+});
+2. Core Differences
+While both approaches run on the exact same underlying ASP.NET Core Kestrel web server, they handle the HTTP request pipeline differently.
+
+Boilerplate and Structure
+Web API: Forces a highly opinionated structure. You must use classes, inheritance (ControllerBase), constructors for DI, and routing attributes. This is great for massive, enterprise-level applications where strict organization is required.
+
+Minimal API: Unopinionated and fluid. You map routes directly to functions. It is incredibly fast to write, making it perfect for microservices, small utilities, or developers coming from Node.js (Express) or Python (FastAPI).
+
+Performance
+Web API: Slightly slower and more memory-intensive. For every incoming HTTP request, the framework uses Reflection to find the right controller, instantiates the controller class, allocates memory for it, and then executes the method.
+
+Minimal API: Faster. Because you are wiring up direct function pointers (lambdas) to HTTP routes, ASP.NET Core bypasses the entire controller instantiation step. It results in fewer heap allocations, less GC pressure, and slightly faster throughput (often yielding around 10-20% more requests per second in raw benchmarks).
+
+Filters and Middleware
+Web API: Relies heavily on Action Filters (e.g., [Authorize], [ValidateModel]) which you decorate on top of your classes or methods.
+
+Minimal API: Does not support Action Filters (because there are no "Actions"). Instead, you use Endpoint Filters by chaining methods onto your route declarations (e.g., app.MapGet(...).RequireAuthorization().AddEndpointFilter<MyFilter>();).
+
+
+3. When to Use Which?
+
+Microsoft actively supports both, and you can even mix them within the same project. However, industry best practices generally lean toward the following guidelines:
+
+Choose Minimal APIs when:
+You are building a Microservice with a small surface area (e.g., 5 to 15 endpoints).
+
+Raw performance and low memory allocation are critical (e.g., highly trafficked serverless functions).
+
+You want to rapidly prototype an API without jumping through structural hoops.
+
+Choose Traditional Web API (Controllers) when:
+You are building a massive "Monolith" API with hundreds of endpoints.
+
+You need to enforce a rigid, standardized directory structure across a large team of developers.
+
+You are heavily relying on legacy MVC features, complex content negotiation, or OData.

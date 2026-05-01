@@ -1,0 +1,39 @@
+What is IAsyncEnumerable<T>?
+
+
+Introduced in C# 8, IAsyncEnumerable<T> solves a very specific problem: streaming asynchronous data.
+
+If a standard IEnumerable represents a sequence of items you can pull one by one synchronously, an IAsyncEnumerable represents a sequence of items where retrieving the next item might require waiting for an asynchronous I/O operation (like a network call or reading chunks of a massive file).
+
+
+How it works:
+
+Instead of a standard foreach loop, you consume it using an await foreach loop.
+
+```
+// The method pulls chunks of data over the network one by one
+public async IAsyncEnumerable<string> GetLinesFromNetworkAsync()
+{
+    while (await NetworkStream.HasMoreDataAsync())
+    {
+        // Yields the string to the caller, then pauses until the caller asks for the next one
+        yield return await NetworkStream.ReadLineAsync();
+    }
+}
+
+// The Caller
+await foreach (var line in GetLinesFromNetworkAsync())
+{
+    Console.WriteLine(line);
+}
+
+
+```
+
+
+When to use it:
+Paging through APIs: When fetching data from an external API page by page.
+
+Reading large files/streams: When you want to process a 10GB log file line-by-line without loading the entire 10GB into memory (Task<IEnumerable<T>> would require loading the whole thing before returning).
+
+Entity Framework Core: EF Core supports returning IAsyncEnumerable so you can start processing database rows the millisecond the first row arrives over the network, rather than waiting for the entire table to finish downloading into a standard List.
