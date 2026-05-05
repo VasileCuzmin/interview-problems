@@ -1,0 +1,15 @@
+C:\WORK\interview-problems\CovarianceAndContravariance\bin\Debug\net9.0\CovarianceAndContravariance.exe
+C:\WORK\interview-problems\CovarianceAndContravariance\bin\Debug\net9.0\CovarianceAndContravariance.deps.json
+C:\WORK\interview-problems\CovarianceAndContravariance\bin\Debug\net9.0\CovarianceAndContravariance.runtimeconfig.json
+C:\WORK\interview-problems\CovarianceAndContravariance\bin\Debug\net9.0\CovarianceAndContravariance.dll
+C:\WORK\interview-problems\CovarianceAndContravariance\bin\Debug\net9.0\CovarianceAndContravariance.pdb
+C:\WORK\interview-problems\CovarianceAndContravariance\obj\Debug\net9.0\CovarianceAndContravariance.GeneratedMSBuildEditorConfig.editorconfig
+C:\WORK\interview-problems\CovarianceAndContravariance\obj\Debug\net9.0\CovarianceAndContravariance.AssemblyInfoInputs.cache
+C:\WORK\interview-problems\CovarianceAndContravariance\obj\Debug\net9.0\CovarianceAndContravariance.AssemblyInfo.cs
+C:\WORK\interview-problems\CovarianceAndContravariance\obj\Debug\net9.0\CovarianceAndContravariance.csproj.CoreCompileInputs.cache
+C:\WORK\interview-problems\CovarianceAndContravariance\obj\Debug\net9.0\CovarianceAndContravariance.sourcelink.json
+C:\WORK\interview-problems\CovarianceAndContravariance\obj\Debug\net9.0\CovarianceAndContravariance.dll
+C:\WORK\interview-problems\CovarianceAndContravariance\obj\Debug\net9.0\refint\CovarianceAndContravariance.dll
+C:\WORK\interview-problems\CovarianceAndContravariance\obj\Debug\net9.0\CovarianceAndContravariance.pdb
+C:\WORK\interview-problems\CovarianceAndContravariance\obj\Debug\net9.0\CovarianceAndContravariance.genruntimeconfig.cache
+C:\WORK\interview-problems\CovarianceAndContravariance\obj\Debug\net9.0\ref\CovarianceAndContravariance.dll

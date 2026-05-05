@@ -1,0 +1,90 @@
+﻿Here is another practical example of contravariance, this time moving away from databases and looking at an Event Handling or Messaging system.
+
+Remember the golden rule for contravariance (in): It is used for consumers. If an object only ever receives data, you can safely pass it a more generic handler to do a specific job.
+
+The Setup: Our Events
+Let's say we have a base Event class, and a more specific UserCreatedEvent.
+
+C#
+// The broad, generic concept
+public class Event 
+{ 
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+}
+
+// The specific concept
+public class UserCreatedEvent : Event 
+{ 
+    public string Username { get; set; } 
+}
+The Contravariant Interface (in)
+We want to build a system that processes these events. Because an event handler only ever takes in an event to process it (it doesn't return events), we can make it contravariant using the in keyword.
+
+C#
+// The 'in' keyword guarantees T is only ever used as a parameter.
+public interface IEventHandler<in T>
+{
+    void Handle(T domainEvent);
+}
+The Implementations
+Now, let's create a generic, catch-all logger that can log any type of Event.
+
+C#
+// This handler can process absolutely ANY Event
+public class GenericEventLogger : IEventHandler<Event>
+{
+    public void Handle(Event domainEvent)
+    {
+        Console.WriteLine($"[LOG] An event occurred at {domainEvent.Timestamp}");
+    }
+}
+The "Aha!" Moment (Contravariance in Action)
+Imagine we have a registration service. This service specifically needs a tool to handle UserCreatedEvent objects.
+
+Because of contravariance, we don't need to write a specific UserCreatedEventLogger. We can just hand our specific service the broad GenericEventLogger.
+
+C#
+public class RegistrationService
+{
+    // 1. Create our broad, generic logger
+    IEventHandler<Event> broadLogger = new GenericEventLogger();
+
+    public void RegisterUser()
+    {
+        // 2. CONTRAVARIANCE: We assign the broad handler to a variable 
+        // expecting a highly specific handler.
+        IEventHandler<UserCreatedEvent> specificHandler = broadLogger;
+
+        // 3. We use it safely!
+        var newEvent = new UserCreatedEvent { Username = "dave_smith" };
+        specificHandler.Handle(newEvent);
+    }
+}
+Why does this make sense?
+Think of it like a mailroom.
+
+IEventHandler<UserCreatedEvent> means "I need someone who knows what to do with a User Created letter."
+
+You hand them GenericEventLogger, which is a person who says "I know what to do with literally ANY letter."
+
+The compiler allows this assignment because it is completely safe. The specificHandler is only ever going to give it UserCreatedEvent objects. Because the GenericEventLogger knows how to handle the base Event (like reading the Timestamp), and a UserCreatedEvent is an Event, the logger will never fail or ask for properties that don't exist.
+
+
+What would happen if the interface had a method that returns T?
+
+
+
+
+A Built-in C# Example
+You have likely used contravariance in C# without even knowing it! The built-in Action<T> delegate is contravariant.
+
+C#
+// Action is defined under the hood as: public delegate void Action<in T>(T obj);
+
+Action<object> printObject = (obj) => Console.WriteLine(obj.ToString());
+
+// Because Action is contravariant, you can assign an Action<object> to an Action<string>
+Action<string> printString = printObject; 
+
+printString("Hello World!");
+```</T></UserCreatedEvent>

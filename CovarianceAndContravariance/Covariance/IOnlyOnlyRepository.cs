@@ -1,6 +1,6 @@
 ﻿// This is INVARIANT. You cannot use 'in' or 'out' here.
 
-namespace CovarianceAndContravariance;
+namespace CovarianceAndContravariance.Covariance;
 
 public interface IOnlyOnlyRepository<T> : IReadOnlyRepository<T>, IWriteOnlyRepository<T>
 {

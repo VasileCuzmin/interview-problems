@@ -1,4 +1,4 @@
-﻿namespace CovarianceAndContravariance;
+﻿namespace CovarianceAndContravariance.Covariance;
 
 public interface IReadOnlyRepository<out T>
 {
